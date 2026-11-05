@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>日本語子音フラッシュカード</title>
+<style>
+  :root{
+    --bg:#f6f4ef; --card:#fff; --ink:#22252b; --sub:#6b7078; --line:#e3dfd6;
+    --accent:#2f6f8f; --accent-soft:#e3eef3; --ok:#2e7d4f; --ok-soft:#e4f3ea; --ng:#b8442f; --ng-soft:#f8e6e1;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;line-height:1.5}
+  header{max-width:720px;margin:0 auto;padding:16px 16px 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  h1{font-size:18px;margin:0;flex:1;min-width:200px}
+  .stat{font-size:14px;color:var(--sub)}
+  .stat b{color:var(--ink)}
+  main{max-width:720px;margin:0 auto;padding:12px 16px 40px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .prompt{text-align:center;padding:12px 0 6px}
+  .kana{font-size:72px;font-weight:700;letter-spacing:.04em;line-height:1.1}
+  .ctx{font-size:16px;color:var(--sub);min-height:24px;margin-top:4px}
+  .speak{margin-top:8px;background:none;border:1px solid var(--line);border-radius:999px;padding:4px 14px;font-size:14px;color:var(--sub);cursor:pointer}
+  .q{margin-top:18px}
+  .q h2{font-size:14px;color:var(--sub);margin:0 0 6px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .mark{font-size:13px;font-weight:700;padding:0 8px;border-radius:999px}
+  .mark.ok{background:var(--ok-soft);color:var(--ok)} .mark.ng{background:var(--ng-soft);color:var(--ng)}
+  .opts{display:flex;flex-wrap:wrap;gap:8px}
+  .opt{flex:1 1 auto;min-width:84px;padding:10px 12px;border:1.5px solid var(--line);background:#fff;border-radius:10px;font-size:15px;cursor:pointer;color:var(--ink);font-family:inherit}
+  .opt:hover{border-color:var(--accent)}
+  .opt.sel{border-color:var(--accent);background:var(--accent-soft);font-weight:700}
+  .opt.correct{border-color:var(--ok);background:var(--ok-soft);color:var(--ok);font-weight:700}
+  .opt.wrong{border-color:var(--ng);background:var(--ng-soft);color:var(--ng);text-decoration:line-through}
+  .opt:disabled{cursor:default}
+  .actions{margin-top:20px;display:flex;gap:10px}
+  .btn{flex:1;padding:13px;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.primary:disabled{background:#b9c6cd;cursor:default}
+  .btn.ghost{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+  .result{margin-top:18px;display:none;gap:16px;align-items:flex-start;border-top:1px solid var(--line);padding-top:16px}
+  .result.show{display:flex}
+  .result img{width:150px;border-radius:8px;border:1px solid var(--line);flex:none}
+  .result .noimg{width:150px;height:190px;border-radius:8px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:13px;text-align:center;flex:none;padding:8px}
+  .verdict{font-size:20px;font-weight:700;margin-bottom:4px}
+  .verdict.ok{color:var(--ok)} .verdict.ng{color:var(--ng)}
+  .ans{font-size:16px}
+  .ipa{font-family:"Doulos SIL","Charis SIL","Times New Roman",serif;font-size:18px}
+  .note{font-size:13px;color:var(--sub);margin-top:6px}
+  details{margin-top:14px}
+  summary{cursor:pointer;font-size:14px;color:var(--sub)}
+  .filters{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:14px}
+  .filters label{display:flex;align-items:center;gap:4px;cursor:pointer}
+  .done{text-align:center;padding:20px 0}
+  .done .big{font-size:40px;font-weight:700}
+  .misslist{margin:12px 0;font-size:18px;letter-spacing:.05em}
+  @media (max-width:520px){.kana{font-size:60px}.result{flex-direction:column;align-items:center}.result img,.result .noimg{width:180px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>日本語子音フラッシュカード</h1>
+  <div class="stat">進捗 <b id="prog">0/0</b>　正解 <b id="score">0</b></div>
+</header>
+<main>
+  <div class="panel" id="quiz">
+    <div class="prompt">
+      <div class="kana" id="kana">カ</div>
+      <div class="ctx" id="ctx"></div>
+      <button class="speak" id="speak" type="button">🔊 読み上げ</button>
+    </div>
+
+    <div class="q"><h2>調音点 <span class="mark" id="m-place"></span></h2><div class="opts" id="o-place"></div></div>
+    <div class="q"><h2>調音法 <span class="mark" id="m-manner"></span></h2><div class="opts" id="o-manner"></div></div>
+    <div class="q"><h2>声帯振動 <span class="mark" id="m-voice"></span></h2><div class="opts" id="o-voice"></div></div>
+
+    <div class="result" id="result">
+      <div id="figure"></div>
+      <div>
+        <div class="verdict" id="verdict"></div>
+        <div class="ans" id="ans"></div>
+        <div class="note" id="note"></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" id="check" disabled>答え合わせ</button>
+      <button class="btn primary" id="next" style="display:none">次へ →</button>
+    </div>
+
+    <details>
+      <summary>出題範囲・設定</summary>
+      <div class="filters" id="filters"></div>
+      <div class="actions"><button class="btn ghost" id="restart">この範囲でシャッフルしてやり直す</button></div>
+    </details>
+  </div>
+
+  <div class="panel done" id="done" style="display:none">
+    <div>おつかれさまでした</div>
+    <div class="big" id="final"></div>
+    <div id="missWrap"><div class="note">間違えた音</div><div class="misslist" id="misslist"></div></div>
+    <div class="actions">
+      <button class="btn primary" id="retryMiss">間違えた音だけ復習</button>
+      <button class="btn ghost" id="retryAll">最初から</button>
+    </div>
+  </div>
+</main>
+
+<script>
+const PLACES = ["両唇","歯茎","歯茎硬口蓋","硬口蓋","軟口蓋","その他"];
+const MANNERS = ["鼻音","破裂音","破擦音","摩擦音","その他"];
+const VOICES = ["無声","有声"];
+
+// グループ定義（手書きメモの1〜5＋声門）
+// place/manner が「その他」のときは detail に本来の名称を入れる
+const GROUPS = [
+  {key:"両唇", items:[
+    {kana:"パピプペポ", ipa:"p", place:"両唇", manner:"破裂音", voice:"無声", img:"bilabial-stop"},
+    {kana:"バビブベボ", ipa:"b", place:"両唇", manner:"破裂音", voice:"有声", img:"bilabial-stop"},
+    {kana:"フ", ipa:"ɸ", place:"両唇", manner:"摩擦音", voice:"無声", img:"bilabial-fric"},
+    {kana:"マミムメモ", ipa:"m", place:"両唇", manner:"鼻音", voice:"有声", img:"bilabial-nasal"},
+  ]},
+  {key:"歯茎", items:[
+    {kana:"タテト", ipa:"t", place:"歯茎", manner:"破裂音", voice:"無声", img:"alveolar-stop"},
+    {kana:"ダデド", ipa:"d", place:"歯茎", manner:"破裂音", voice:"有声", img:"alveolar-stop"},
+    {kana:"ナヌネノ", ipa:"n", place:"歯茎", manner:"鼻音", voice:"有声", img:"alveolar-nasal"},
+    {kana:"サスセソ", ipa:"s", place:"歯茎", manner:"摩擦音", voice:"無声", img:"alveolar-fric"},
+    {kana:"ザズゼゾ", ctx:"語中", ipa:"z", place:"歯茎", manner:"摩擦音", voice:"有声", img:"alveolar-fric"},
+    {kana:"ザズゼゾ", ctx:"語頭", ipa:"dz", place:"歯茎", manner:"破擦音", voice:"有声", img:"alveolar-stop"},
+    {kana:"ツ", ipa:"ts", place:"歯茎", manner:"破擦音", voice:"無声", img:"alveolar-stop"},
+    {kana:"ラリルレロ", ipa:"ɾ", place:"歯茎", manner:"その他", voice:"有声", img:"alveolar-tap", detail:"歯茎はじき音"},
+  ]},
+  {key:"歯茎硬口蓋", items:[
+    {kana:"シ", ipa:"ɕ", place:"歯茎硬口蓋", manner:"摩擦音", voice:"無声", img:"alveolopalatal-fric"},
+    {kana:"ジ", ctx:"語中", ipa:"ʑ", place:"歯茎硬口蓋", manner:"摩擦音", voice:"有声", img:"alveolopalatal-fric"},
+    {kana:"ジ", ctx:"語頭・「ン」「ッ」の後", ipa:"dʑ", place:"歯茎硬口蓋", manner:"破擦音", voice:"有声", img:"alveolopalatal-stop"},
+    {kana:"チ", ipa:"tɕ", place:"歯茎硬口蓋", manner:"破擦音", voice:"無声", img:"alveolopalatal-stop"},
+    {kana:"ニ", ipa:"ɲ", place:"歯茎硬口蓋", manner:"鼻音", voice:"有声", img:"palatal-nasal",
+     note:"図は教科書の表で「硬口蓋」欄に置かれている[ɲ]。教科書の注で「歯茎硬口蓋とする場合もある」とされている。"},
+  ]},
+  {key:"硬口蓋", items:[
+    {kana:"ヒ", ipa:"ç", place:"硬口蓋", manner:"摩擦音", voice:"無声", img:"palatal-fric"},
+    {kana:"ヤユヨ", ipa:"j", place:"硬口蓋", manner:"その他", voice:"有声", detail:"半母音（接近音）"},
+  ]},
+  {key:"軟口蓋", items:[
+    {kana:"カキクケコ", ipa:"k", place:"軟口蓋", manner:"破裂音", voice:"無声", img:"velar-stop"},
+    {kana:"ガギグゲゴ", ipa:"g", place:"軟口蓋", manner:"破裂音", voice:"有声", img:"velar-stop"},
+    {kana:"ワ", ipa:"ɰ", place:"軟口蓋", manner:"その他", voice:"有声", detail:"半母音（接近音）"},
+  ]},
+  {key:"声門", items:[
+    {kana:"ハヘホ", ipa:"h", place:"その他", manner:"摩擦音", voice:"無声", detail:"声門"},
+  ]},
+];
+
+// 1文字ずつのカードに展開
+const ALL = [];
+GROUPS.forEach(g => g.items.forEach(it => {
+  [...it.kana].forEach(ch => ALL.push({...it, kana:ch, group:g.key}));
+}));
+
+let enabled = new Set(GROUPS.map(g=>g.key));
+let deck = [], idx = 0, score = 0, misses = [], answered = false;
+const sel = {place:null, manner:null, voice:null};
+const $ = id => document.getElementById(id);
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function buildOpts(id, list, key){
+  const box = $(id); box.innerHTML = "";
+  list.forEach(v => {
+    const b = document.createElement("button");
+    b.className = "opt"; b.type = "button"; b.textContent = v; b.dataset.v = v;
+    b.onclick = () => { if(answered) return; sel[key]=v;
+      box.querySelectorAll(".opt").forEach(x=>x.classList.toggle("sel", x.dataset.v===v));
+      $("check").disabled = !(sel.place && sel.manner && sel.voice);
+    };
+    box.appendChild(b);
+  });
+}
+
+function buildFilters(){
+  const f = $("filters"); f.innerHTML="";
+  GROUPS.forEach(g=>{
+    const l=document.createElement("label");
+    const n = ALL.filter(c=>c.group===g.key).length;
+    l.innerHTML=`<input type="checkbox" ${enabled.has(g.key)?"checked":""}> ${g.key}（${n}）`;
+    l.querySelector("input").onchange=e=>{ e.target.checked?enabled.add(g.key):enabled.delete(g.key); };
+    f.appendChild(l);
+  });
+}
+
+function start(cards){
+  deck = shuffle(cards.slice()); idx=0; score=0; misses=[];
+  $("done").style.display="none"; $("quiz").style.display="";
+  show();
+}
+
+function show(){
+  answered=false; sel.place=sel.manner=sel.voice=null;
+  const c = deck[idx];
+  $("kana").textContent = c.kana;
+  $("ctx").textContent = c.ctx ? `（${c.ctx}）` : "";
+  buildOpts("o-place", PLACES, "place");
+  buildOpts("o-manner", MANNERS, "manner");
+  buildOpts("o-voice", VOICES, "voice");
+  ["place","manner","voice"].forEach(k=>{const m=$("m-"+k);m.textContent="";m.className="mark"});
+  $("result").classList.remove("show");
+  $("check").style.display=""; $("check").disabled=true; $("next").style.display="none";
+  updateStat();
+}
+
+function updateStat(){ $("prog").textContent=`${Math.min(idx+(answered?1:0),deck.length)}/${deck.length}`; $("score").textContent=score; }
+
+function check(){
+  answered=true; const c=deck[idx];
+  let all=true;
+  [["place","o-place"],["manner","o-manner"],["voice","o-voice"]].forEach(([k,id])=>{
+    const ok = sel[k]===c[k]; if(!ok) all=false;
+    $(id).querySelectorAll(".opt").forEach(b=>{
+      b.disabled=true;
+      if(b.dataset.v===c[k]) b.classList.add("correct");
+      else if(b.dataset.v===sel[k]) b.classList.add("wrong");
+    });
+    const m=$("m-"+k); m.textContent= ok?"○":"×"; m.className="mark "+(ok?"ok":"ng");
+  });
+  if(all) score++; else misses.push(c);
+  const v=$("verdict"); v.textContent= all?"正解！":"惜しい"; v.className="verdict "+(all?"ok":"ng");
+  const placeTxt = c.place==="その他" ? `その他（${c.detail}）` : c.place;
+  const mannerTxt = c.manner==="その他" ? `その他（${c.detail}）` : c.manner;
+  $("ans").innerHTML = `<span class="ipa">[${c.ipa}]</span>　${c.voice}・${placeTxt}・${mannerTxt}`;
+  $("note").textContent = c.note || "";
+  $("figure").innerHTML = c.img ? `<img src="img/${c.img}.jpg" alt="${c.place}${c.manner}の口腔断面図">`
+                                : `<div class="noimg">この音の断面図は<br>未収録</div>`;
+  $("result").classList.add("show");
+  $("check").style.display="none"; $("next").style.display="";
+  updateStat();
+}
+
+function next(){
+  idx++;
+  if(idx>=deck.length){ finish(); return; }
+  show();
+}
+
+function finish(){
+  $("quiz").style.display="none"; $("done").style.display="";
+  $("final").textContent=`${score} / ${deck.length}`;
+  $("misslist").textContent = misses.map(c=>c.kana+(c.ctx?`(${c.ctx})`:"")).join("　");
+  $("missWrap").style.display = misses.length?"":"none";
+  $("retryMiss").style.display = misses.length?"":"none";
+}
+
+$("check").onclick=check;
+$("next").onclick=next;
+$("restart").onclick=()=>{ const cards=ALL.filter(c=>enabled.has(c.group)); if(cards.length) start(cards); };
+$("retryMiss").onclick=()=>start(misses);
+$("retryAll").onclick=()=>start(ALL.filter(c=>enabled.has(c.group)));
+$("speak").onclick=()=>{
+  try{ const u=new SpeechSynthesisUtterance(deck[idx].kana); u.lang="ja-JP"; u.rate=0.8;
+       speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){}
+};
+document.addEventListener("keydown",e=>{ if(e.key==="Enter"){ if(!answered && !$("check").disabled) check(); else if(answered) next(); }});
+
+buildFilters();
+start(ALL);
+</script>
+</body>
+</html>
