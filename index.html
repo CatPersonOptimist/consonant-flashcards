@@ -90,6 +90,7 @@
     <details>
       <summary>出題範囲・設定</summary>
       <div class="filters" id="filters"></div>
+      <div class="filters"><label><input type="checkbox" id="sfx"> 正解・不正解の効果音を鳴らす</label></div>
       <div class="actions"><button class="btn ghost" id="restart">この範囲でシャッフルしてやり直す</button></div>
     </details>
   </div>
@@ -223,6 +224,7 @@ function check(){
     const m=$("m-"+k); m.textContent= ok?"○":"×"; m.className="mark "+(ok?"ok":"ng");
   });
   if(all) score++; else misses.push(c);
+  playSfx(all);
   const v=$("verdict"); v.textContent= all?"正解！":"惜しい"; v.className="verdict "+(all?"ok":"ng");
   const placeTxt = c.place==="その他" ? `その他（${c.detail}）` : c.place;
   const mannerTxt = c.manner==="その他" ? `その他（${c.detail}）` : c.manner;
@@ -247,6 +249,30 @@ function finish(){
   $("misslist").textContent = misses.map(c=>c.kana+(c.ctx?`(${c.ctx})`:"")).join("　");
   $("missWrap").style.display = misses.length?"":"none";
   $("retryMiss").style.display = misses.length?"":"none";
+}
+
+// 効果音（Web Audio API で合成。音声ファイルは使わない）
+let sfxOn = true, actx = null;
+try{ sfxOn = localStorage.getItem("sfx") !== "off"; }catch(e){}
+$("sfx").checked = sfxOn;
+$("sfx").onchange = e=>{ sfxOn = e.target.checked; try{ localStorage.setItem("sfx", sfxOn?"on":"off"); }catch(err){} };
+function tone(freq, t0, dur, type, vol){
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.type=type; o.frequency.value=freq;
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol, t0+0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+  o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0+dur+0.02);
+}
+function playSfx(ok){
+  if(!sfxOn) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state==="suspended") actx.resume();
+    const t=actx.currentTime+0.01;
+    if(ok){ tone(880,t,0.18,"sine",0.25); tone(1318.5,t+0.12,0.32,"sine",0.25); } // ピンポン
+    else  { tone(220,t,0.22,"square",0.08); tone(196,t+0.18,0.3,"square",0.08); }   // ブブー
+  }catch(e){}
 }
 
 $("check").onclick=check;
